@@ -1,4 +1,4 @@
-package com.vectorbridge.resource;   // ✅ correct package
+package com.vectorbridge.resource;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
