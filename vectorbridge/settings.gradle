@@ -1,0 +1,2 @@
+rootProject.name = 'vectorbridge'
+include 'backend'
