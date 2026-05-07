@@ -1,5 +1,7 @@
 package com.vectorbridge;
 
+import com.vectorbridge.db.DatabaseManager;
+import com.vectorbridge.db.DataLoader;
 import com.vectorbridge.server.JettyServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +11,16 @@ public class App{
 
     public static void main(String[] args) throws Exception{
         log.info("Starting VectorBridge....");
+        
+        // Initialize database
+        DatabaseManager.initialize();
+        DataLoader.load();
+        
+        // Add shutdown hook to close database
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            DatabaseManager.shutdown();
+        }));
+        
         JettyServer server = new JettyServer(8080);
         server.start();
         log.info("VectorBridge running at http://localhost:8080");
