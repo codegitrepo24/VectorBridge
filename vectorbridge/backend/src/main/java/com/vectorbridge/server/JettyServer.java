@@ -12,6 +12,7 @@ import org.eclipse.jetty.server.Server;
 import java.net.URI;
 
 import com.vectorbridge.resource.AiQueryResource;
+import com.vectorbridge.resource.VectorResource;
 
 public class JettyServer {
 
@@ -22,6 +23,7 @@ public class JettyServer {
         config.registerClasses(HealthResource.class);
         config.registerClasses(CustomerResource.class);
         config.registerClasses(AiQueryResource.class);
+        config.registerClasses(VectorResource.class);
         config.register(JacksonFeature.class);
 
         server = JettyHttpContainerFactory.createServer(

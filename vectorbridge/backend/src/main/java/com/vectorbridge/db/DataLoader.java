@@ -75,6 +75,19 @@ public class DataLoader {
             
             log.info("Sample data loaded successfully.");
 
+       String createEmbeddingsTable = """
+                CREATE TABLE IF NOT EXISTS embeddings(
+                    id INT PRIMARY KEY AUTO_INCREMENT, 
+                    source_table VARCHAR(50) NOT NULL,
+                    source_id INT NOT NULL,
+                    text_content TEXT NOT NULL,
+                    vector CLOB NOT NULL,
+                    created_at Timestamp DEFAULT CURRENT_TIMESTAMP)
+                """;
+
+        stmt.execute(createEmbeddingsTable);
+        System.out.println("Embeddings table initialized.");
+
         } catch (Exception e) {
             log.error("Failed to load sample data", e);
         }
