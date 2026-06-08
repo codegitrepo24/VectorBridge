@@ -6,6 +6,7 @@ import java.util.Map;
 public class QueryResult {
     private String naturalLanguageQuery;
     private String generatedSql;
+    private String executeSql; // Why: To capture any error that occurs during SQL execution
     private List<Map<String, Object>> results;
     private int rowCount;
     private String error;
@@ -21,6 +22,7 @@ public class QueryResult {
     public QueryResult(String naturalLanguageQuery, String generatedSql, List<Map<String, Object>> results) {
         this.naturalLanguageQuery = naturalLanguageQuery;
         this.generatedSql = generatedSql;
+        this.executeSql = generatedSql; // Why: To capture the actual SQL that was executed, which may differ if the user edited it after generation
         this.results = results;
         this.rowCount = results != null ? results.size() : 0;
     }

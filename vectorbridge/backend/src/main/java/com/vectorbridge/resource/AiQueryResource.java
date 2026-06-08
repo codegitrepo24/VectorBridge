@@ -1,7 +1,7 @@
 package com.vectorbridge.resource;
 
 import com.vectorbridge.ai.GeminiClient;
-import com.vectorbridge.ai.QueryResult;
+// import com.vectorbridge.ai.QueryResult; // Why: This class is no longer used in the current implementation, but we keep it here for potential future use when we want to return a more structured response that includes both the generated SQL and the execution results/errors in one object.
 import com.vectorbridge.db.DatabaseManager;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -12,47 +12,81 @@ import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.*;
 
-@Path("/ai")
+@Path("/api/ai")
+// Moving these to the class level applies them to all endpoints automatically
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
 public class AiQueryResource {
 
     private static final Logger log = LoggerFactory.getLogger(AiQueryResource.class);
     private final GeminiClient geminiClient = new GeminiClient();
 
+    /**
+     * Step 1: Translate Natural Language to SQL
+     */
     @POST
-    @Path("/query")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response query(Map<String, String> body) {
-
+    @Path("/generate-sql")
+    public Response generateSql(Map<String, String> body) {
         String userQuery = body.get("query");
 
         if (userQuery == null || userQuery.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new QueryResult(userQuery, "Query cannot be empty"))
+                .entity(Map.of("error", "Query cannot be empty"))
                 .build();
         }
 
-        log.info("AI query received: {}", userQuery);
+        log.info("Generating SQL for AI query: {}", userQuery);
 
         try {
-            // Step 1: Ask Gemini to generate SQL
             String generatedSql = geminiClient.generateSql(userQuery);
-
-            // Step 2: Run the generated SQL against H2
-            List<Map<String, Object>> results = executeQuery(generatedSql);
-
-            // Step 3: Return results
-            QueryResult result = new QueryResult(userQuery, generatedSql, results);
-            return Response.ok(result).build();
-
+            return Response.ok(Map.of("sql", generatedSql)).build();
         } catch (Exception e) {
-            log.error("AI query failed", e);
+            log.error("AI SQL generation failed", e);
             return Response.serverError()
-                .entity(new QueryResult(userQuery, "Failed: " + e.getMessage()))
+                .entity(Map.of("error", "Failed: " + e.getMessage()))
                 .build();
         }
     }
 
+    /**
+     * Step 2: Execute the generated/edited SQL against the database
+     */
+    @POST
+    @Path("/execute-sql")
+    public Response executeSql(Map<String, String> body) {
+        String sql = body.get("sql");
+
+        if (sql == null || sql.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Map.of("error", "SQL cannot be empty"))
+                .build();
+        }
+
+        // SECURITY CHECK: Prevent destructive operations
+        String upperSql = sql.toUpperCase();
+        if (upperSql.contains("DROP") || upperSql.contains("DELETE") || upperSql.contains("UPDATE") || upperSql.contains("INSERT")) {
+            log.warn("Blocked destructive SQL query: {}", sql);
+            return Response.status(Response.Status.FORBIDDEN)
+                .entity(Map.of("error", "Only SELECT queries are allowed for safety."))
+                .build();
+        }
+
+        log.info("Executing SQL: {}", sql);
+
+        try {
+            List<Map<String, Object>> results = executeQuery(sql);
+            return Response.ok(results).build();
+        } catch (Exception e) {
+            log.error("SQL Execution failed", e);
+            return Response.serverError()
+                .entity(Map.of("error", "Database execution failed: " + e.getMessage()))
+                .build();
+        }
+    }
+
+    /**
+     * Your original, perfect helper method.
+     */
     private List<Map<String, Object>> executeQuery(String sql) throws Exception {
         List<Map<String, Object>> rows = new ArrayList<>();
 
@@ -77,4 +111,5 @@ public class AiQueryResource {
 
         return rows;
     }
+
 }

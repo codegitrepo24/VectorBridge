@@ -65,6 +65,11 @@ public class GeminiClient {
 
                 JsonNode root = mapper.readTree(responseBody);
 
+                if (!root.has("candidates") || root.path("candidates").isEmpty()) {
+                    log.error("Gemini API failed. Response: {}", responseBody);
+                    throw new RuntimeException("Gemini API error: " + responseBody);
+                }
+
                 // Extract generated text from Gemini response
                 String sql = root
                         .path("candidates").get(0)
